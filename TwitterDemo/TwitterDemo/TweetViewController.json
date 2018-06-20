@@ -1,0 +1,175 @@
+{
+    "***": [
+        "This file will only be loaded if the `restorationIdentifier` for this view controller is set to `TweetViewController`."
+    ],
+    "TweetViewController": {
+        "objects": {
+            "tweetActionController": {
+                "***": [
+                    "`ActionController` and its decendans can send forms. Form is a UIView of type `FormDisplayView`, which collects data from its `mandatoryFields` and `optionalFields` outlets.",
+                    "You can connect any type of view to `FormDisplayView`, as soon as it has miningful `wx_fieldValue` override. F.e. for UITextField `wx_fieldValue` returns `text` property.",
+                    "When you press `Post` button, the form collects data from its mandatory and optional fields into dictionary [`wx_fieldName`: `wx_fieldValue`] and pass it to `StandardServiceProvider`.",
+                    "For media data it depends on data itself, f.e. for image, selected from gallery it's JPEG data with compression you set in `UploadContainerView.imageCompression`.",
+                    "For video it's media file path, which upload is handled by `StandardServiceProvider` (`TwitterService` in this case), according to settings in your Service.json file.",
+                    "Forms can be nested. In this sample, form which posts a tweet contains UITextView (`wx_fieldName`: `text`) and two forms of type `MediaUploadFormView` (`wx_fieldName`: `media_ids`).",
+                    "So form can be a field for another form. First, `MediaUploadFormView` uploads media via `UploadContainerView`, obtains the result, and keep it in memory in raw form (JSON).",
+                    "Then, upon pressing `Post` button, outer form collects data from its fields and take the result from each `MediaUploadFormView` via `resultInfoValueKey`.",
+                    "If it sees two or more fields with the same name, it applies one of the `dublicateKeyPolicy` rules: `array` or `join`. For this sample it's `join` (concatenate), which is for Twitter.",
+                    "If you leave `form` outlet empty, `ActionController` will pass `content` object of this view controller.",
+                    "Inside Service.json's paths and actions you can access properties of the `content` object and form dictionary values via $keyPath notation.",
+                    "Refer to this view controller view hierarchy for details. Inspect User Defined Runtime Attributes and `mandatoryFields`/`optionalFields` to understand how data is collected."
+                ],
+                "type": "BarButtonActionController",
+                "attrs": {
+                    "actionName": "tweet"
+                },
+                "outlets": {
+                    "form": "formView",
+                    "sender": "tweetButton"
+                }
+            },
+            "tweetStatusController": {
+                "type": "ActionStatusController",
+                "alias": "tweetStatus",
+                "attrs": {
+                    "actionName": "tweet",
+                    "errorMessage": "Tweet can`t be tweeted so far."
+                },
+                "outlets": {
+                    "elements": [
+                        "tweetButton",
+                        "textView"
+                    ]
+                }
+            },
+            "uploadActionController1": {
+                "***": [
+                    "`ActionController` connected to `MediaUploadFormView` doesn't need `sender`, because it's activated automatically."
+                ],
+                "type": "ActionController",
+                "attrs": {
+                    "actionName": "attachImage",
+                    "actionDelay": 1
+                },
+                "outlets": {
+                    "form": "mediaForm1"
+                }
+            },
+            "uploadActionController2": {
+                "type": "ActionController",
+                "attrs": {
+                    "actionName": "attachImage",
+                    "actionDelay": 1
+                },
+                "outlets": {
+                    "form": "mediaForm2"
+                }
+            },
+            "mediaPickerController": {
+                "***": [
+                    "`StandardMediaPickerController` manages picking and upload activation processes.",
+                    "You can use `showOptions` property to show action sheet menu with picking options. By default it's `true`.",
+                    "Use `cameraOptionTitle`, `libraryOptionTitle` and `cancelOptionTitle` properties to customize options buttons.",
+                    "Picking is limited to images only, because Twitter has very complex video attachment procedure, which is not easy to reproduce even with code.",
+                    "When you pick any media, this object updates its view controller and it fires up all bindings. That's how this sliding animation works.",
+                    "`mediaForm1Width` animated constraint tied to `mediaForm1.uploadContainer.hasMedia`, which animates when `animatedConstant` property is updated."
+                ],
+                "type": "StandardMediaPickerController",
+                "alias": "mediaPicker",
+                "attrs": {
+                    "imagesOnly": true
+                },
+                "outlets": {
+                    "sender": "pickButton",
+                    "forms": [
+                        "mediaForm1",
+                        "mediaForm2"
+                    ]
+                }
+            }
+        },
+        "elements": {
+            "***": [
+                "`@self` is a special element that refers this view controller. If you need to bind some properties to your view controller, this is the way to go.",
+                "Do not use `@self` symbol anywhere, except this section for bindings."
+            ],
+            "@self": {
+                "***": [
+                    "`serviceProviderClassName` is a default class name for all network actions initiated from this view controller.",
+                    "You can override this parameter in each `ActionController`."
+                ],
+                "attrs": {
+                    "serviceProviderClassName": "TwitterService"
+                },
+                "bindings": [
+                    {
+                        "to": "wx_dismissed",
+                        "from": "tweetStatus.isSuccess"
+                    }
+                ]
+            },
+            "tweetButton": {
+                "bindings": [
+                    {
+                        "to": "wx_disabled",
+                        "from": "tweetStatus.inProgress"
+                    }
+                ]
+            },
+            "textView": {
+                "bindings": [
+                    {
+                        "to": "wx_readOnly",
+                        "from": "tweetStatus.inProgress"
+                    },
+                    {
+                        "predicateFormat": "tweetStatus.isSuccess = 1",
+                        "ifTrue": "",
+                        "ifFalse": "$textView.text"
+                    }
+                ]
+            },
+            "pickButton": {
+                "bindings": [
+                    {
+                        "to": "wx_disabled",
+                        "predicateFormat": "mediaPicker.pickedNumber = 2",
+                        "ifTrue": true,
+                        "ifFalse": false
+                    }
+                ]
+            },
+            "formView": {
+                "outlets": {
+                    "mandatoryFields": [
+                        "textView"
+                    ],
+                    "optionalFields": [
+                        "mediaForm1",
+                        "mediaForm2"
+                    ]
+                }
+            },
+            "mediaForm1Width": {
+                "bindings": [
+                    {
+                        "to": "animatedConstant",
+                        "predicateFormat": "mediaForm1.uploadContainer.hasMedia == 1",
+                        "ifTrue": 138,
+                        "ifFalse": 0
+                    }
+                ]
+            },
+            "mediaForm2Width": {
+                "bindings": [
+                    {
+                        "to": "animatedConstant",
+                        "predicateFormat": "mediaForm2.uploadContainer.hasMedia == 1",
+                        "ifTrue": 138,
+                        "ifFalse": 0
+                    }
+                ]
+            }
+        }
+    }
+}

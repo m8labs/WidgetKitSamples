@@ -1,0 +1,410 @@
+{
+    "***": [
+        "This file will only be loaded if the `restorationIdentifier` for this view controller is set to `TweetsViewController`."
+    ],
+    "TweetsViewController": {
+        "objects": {
+            "***": [
+                "This section is for `CustomIBObject` decendant objects. Connected to each other and to the UI elements, these objects do all the job of this view controller.",
+                "If an object with the same `identifier` is already created (f.e. instantiated as a top level object in IB with `wx.identifier` set), then `type` is ignored.",
+                "To set object properties `attrs` dictionary is used. You can also set these properties in the User Defined Runtime Attributes section of the Identity Inspector in IB.",
+                "To evaluate a value of the object's property `evals` dictionary is used. Not all properties are exposed for evaluation (see below).",
+                "`NSUserDefaults` are accessible via `defaults.*` symbol using settings parameters name as a key path."
+            ],
+            "currentUserProvider": {
+                "***": [
+                    "Fetches current account (first available) from the local database. There must be an `Account` entity in your CoreData model.",
+                    "The `resultChain` utilizes `NSExpression` engine, which is very powerful and can compete with objective-c/swift code with functionality.",
+                    "`resultChain` is an array of `NSArray.wx_*` functions which you can apply on the result set. Each function applies on top of each other in the original order.",
+                    "If any or all functions in the result chain takes an argument, you can put these arguments in a `resultChainArgs` array. Each method can take only 1 argument.",
+                    "F.e. if you have a result array such as [A, B, C, D, E, F], then pair of `resultChain` - `resultChainArgs` such as [`wx_takeFirst:`, `wx_takeLast:`] - [4, 2] will produce [C, D].",
+                    "`resultChain` and `resultChainArgs` shoud contain equal number of elements. If you need to call a method that doesn`t take arguments, pass an empty string or 0.",
+                    "You can also call some of the `NSArray` functions directly, but `wx_*` wrappers are more safe. All args will be anyway converted to strings and then interpreted by `NSExpression` engine as expected by method being called.",
+                    "The following wrappers currently implemented: `wx_itemAt:`, `wx_first`, `wx_last`, `wx_count`, `wx_takeFirst:`, `wx_takeLast:`, `wx_joinedBy:`, `wx_map:`",
+                    "Refer to the `NSExpression` documentation and the `NSArray` collection operators for additional details.",
+                    "The `resultChain` affects only `BaseContentProvider.value` object, which you can refer in bindings. For selecting data use `BaseContentProvider.predicateFormat` (see below).",
+                    "If you need the `resultChain` to filter data set, use `ManagedObjectsCollection` instead of `ManagedObjectsProvider`.",
+                    "You can set `resultChain` and `resultChainArgs` in the storyboard via `resultChainTxt` and `resultChainArgsTxt` textual counterparts using `|` as a delimeter.",
+                    "Keep in mind possible perfomance issues when using `NSExpression`. The order of functions in the `resultChain` can affect perfomance a lot."
+                ],
+                "type": "ManagedObjectsProvider",
+                "attrs": {
+                    "entityName": "Account",
+                    "resultChain": [
+                        "wx_first"
+                    ]
+                }
+            },
+            "feedContentProvider": {
+                "***": [
+                    "Fetches all visible tweets from local database. There must be `Post` entity in your CoreData model.",
+                    "`predicateFormat` has a regular `NSPredicate(format:)` syntax and a scope of the fetched result entity (`Post`)."
+                ],
+                "type": "ManagedObjectsProvider",
+                "attrs": {
+                    "entityName": "Post",
+                    "sortByFields": "timestamp",
+                    "sortAscending": false,
+                    "predicateFormat": "isHidden = 0"
+                }
+            },
+            "newsButtonContentProvider": {
+                "***": [
+                    "Fetches the amount of hidden (new) tweets and applies `wx_count` to the fetch result. Tweets will become visible after button `newsButton` hit (there is @IBAction for this).",
+                    "After all tweets become visible, CoreData notifies this object and it will ask its content consumer (`newsCounterContentController`) to refresh connected ui elements (`newsButton`).",
+                    "During refreshing process `newsButton` will check this object's `value` and `isEmpty` properties and apply them to its `text` and `hidden` properties respectively."
+                ],
+                "alias": "newsCounter",
+                "type": "ManagedObjectsProvider",
+                "attrs": {
+                    "entityName": "Post",
+                    "predicateFormat": "isHidden = 1",
+                    "resultChain": [
+                        "wx_count"
+                    ]
+                }
+            },
+            "currentUserContentController": {
+                "***": [
+                    "`ContentDisplayController` updates this view controller `content` property (and all elements with bindings) with the `value` of `currentUserProvider` whenever data changes."
+                ],
+                "type": "ContentDisplayController",
+                "outlets": {
+                    "mainContentProvider": "currentUserProvider"
+                }
+            },
+            "feedTableContentController": {
+                "***": [
+                    "Updates `tweetsTableView` with the `value` of `feedContentProvider` on content changes or when `showAvatarsChanged` NSNotification happens.",
+                    "Also does basic job of UITableViewDelegate (cell selection handling) and UIScrollViewDelegate (infinite scroll) if you leave `UITableView.delegate` property empty.",
+                    "When you use separate xib for your cells, you can't set segue from the cell directly. Setting `performSegueForCells` to 1 (Integer) will lead to a call of `performSegue` with identifier taken from cell `reuseIdentifier`.",
+                    "Items of `cellNibNames` will be used for registering nibs with the same names.",
+                    "The `evals` dictionary is used to evaluate actual cell identifier for the current `content` object, which is the scope of the `predicateFormat`. Thus, you can choose different cell for every object or object type (`content`s `entityName` property).",
+                    "Currently, only `cellIdentifier` and `searchCellIdentifier` are exposed for evaluation. Basicly, you shouldn't need to evaluate `CustomIBObject`s properties. For UI elements evaluation comes with bindings.",
+                    "When `tableViewAutomaticDimensionEnabled` is turned off (by default it's on and it means `UITableViewAutomaticDimension` for row height), WidgetKit will calculate cells heights based on `wx.layoutHint`, which you should set in the xib or storyboard for resizing elements.",
+                    "Search project on `wx.layoutHint` term to see where it is applied. All such calculations are performed in the background. `wx.layoutHint` doesn't replace AutoLayout engine, it can work together with it, helping to calculate actual height of the cell, which AutoLayout doesn't do very smooth.",
+                    "Actual layouts of elements can be still provided by AutoLayout, thus make it as simple as possible. F.e. provide only edge constraints (left, right, top, bottom) and only for resizing elements - it will work very fast (at least for one resizing element per cell).",
+                    "These background calculations is an experimental feature, so use with caution."
+                ],
+                "type": "TableInfiniteScrollController",
+                "attrs": {
+                    "renderOn": "showAvatarsChanged",
+                    "systemAutomaticDimensionEnabled": false,
+                    "allowDeletion": true,
+                    "performSegueForCells": 1,
+                    "cellNibNames": [
+                        "Cell",
+                        "TextCell"
+                    ]
+                },
+                "evals": {
+                    "cellIdentifier": {
+                        "predicateFormat": "defaults.showAvatars = 1",
+                        "ifTrue": "Cell",
+                        "ifFalse": "TextCell"
+                    }
+                },
+                "outlets": {
+                    "mainContentProvider": "feedContentProvider",
+                    "searchController": "searchController",
+                    "deleteController": "deleteActionController",
+                    "emptyDataView": "emptyDataView",
+                    "elements": [
+                        "tweetsTableView"
+                    ]
+                }
+            },
+            "newsCounterContentController": {
+                "***": [
+                    "Updates `newsButton` (respecting to its bindings) with the `value` of `newsButtonContentProvider` whenever content changes."
+                ],
+                "type": "BaseDisplayController",
+                "outlets": {
+                    "mainContentProvider": "newsButtonContentProvider",
+                    "elements": [
+                        "newsButton"
+                    ]
+                }
+            },
+            "authActionController": {
+                "***": [
+                    "Performs `login` or `logout` selectors in `customTwitterActions` (top level object in IB of type 'TwitterActions') on `signInButton` hit after evaluating predicate with a scope of this view controller.",
+                    "View controller`s `content` object is set by `currentUserContentController`."
+                ],
+                "type": "BarButtonActionController",
+                "attrs": {
+                    "predicateFormat": "content == nil",
+                    "actionName": "login",
+                    "elseActionName": "logout"
+                },
+                "outlets": {
+                    "sender": "signInButton",
+                    "target": "customTwitterActions"
+                }
+            },
+            "tableRefreshActionController": {
+                "***": [
+                    "Automatically adds `UIRefreshControl` to `tweetsTableView` and invokes `homeTweets` in `TwitterService` on pull to refresh.",
+                    "`homeTweets` must be an action in a service configuration json file (Service.json by default)."
+                ],
+                "type": "TableRefreshActionController",
+                "attrs": {
+                    "actionName": "homeTweets"
+                },
+                "outlets": {
+                    "sender": "tweetsTableView"
+                }
+            },
+            "onLoadActionController": {
+                "***": [
+                    "Invokes `currentUser` in `TwitterService` after view controller is loaded (next run loop cycle)."
+                ],
+                "type": "OnLoadActionController",
+                "attrs": {
+                    "actionName": "currentUser"
+                }
+            },
+            "timerActionController": {
+                "***": [
+                    "Invokes `prefetchTweets` in `TwitterService` periodically if current user exists."
+                ],
+                "type": "TimerActionController",
+                "attrs": {
+                    "predicateFormat": "content != nil",
+                    "actionName": "prefetchTweets",
+                    "interval": 60
+                }
+            },
+            "tableInfiniteScrollActionController": {
+                "***": [
+                    "Invokes `moreTweets` in `TwitterService` when `tweetsTableView` scrolled down."
+                ],
+                "type": "InfiniteScrollActionController",
+                "attrs": {
+                    "actionName": "moreTweets",
+                    "trackScrollDown": true
+                },
+                "outlets": {
+                    "sender": "tweetsTableView"
+                }
+            },
+            "currentUserStatusController": {
+                "***": [
+                    "Updates `signInButton` according to `currentUser` action notifications.",
+                    "For each action `StandardServiceProvider` fires a number of notifications, which names constructed from action and event names.",
+                    "F.e. for this action the following notifications fired: `currentUserStart`, `currentUserReady`, `currentUserSuccess`, `currentUserError`.",
+                    "`Ready` is fired before json objects parsed into CoreData objects."
+                ],
+                "alias": "currentUser",
+                "type": "ActionStatusController",
+                "attrs": {
+                    "actionName": "currentUser"
+                },
+                "outlets": {
+                    "elements": [
+                        "signInButton"
+                    ]
+                }
+            },
+            "homeTweetsStatusController": {
+                "***": [
+                    "Updates `UIRefreshControl` of `tweetsTableView` according to `inProgress` property for `homeTweets` action.",
+                    "Shows `errorMessage` in case of error."
+                ],
+                "alias": "homeTweets",
+                "type": "ActionStatusController",
+                "attrs": {
+                    "actionName": "homeTweets",
+                    "errorMessage": "Failed to load tweets!"
+                },
+                "outlets": {
+                    "elements": [
+                        "tweetsTableView"
+                    ]
+                }
+            },
+            "moreTweetsStatusController": {
+                "***": [
+                    "Updates `footerActivityIndicator` according to `inProgress` property for `moreTweets` action.",
+                    "Shows `errorMessage` in case of error."
+                ],
+                "alias": "moreTweets",
+                "type": "ActionStatusController",
+                "attrs": {
+                    "actionName": "moreTweets",
+                    "errorMessage": "Failed to load tweets!"
+                },
+                "outlets": {
+                    "elements": [
+                        "footerActivityIndicator"
+                    ]
+                }
+            },
+            "searchController": {
+                "***": [
+                    "Filters tweets locally with `searchBar` `input` (predefined var) substituted to `filterFormat`.",
+                    "If you don't provide `contentProvider` outlet directly here, it will be taken from `feedTableContentController`, which has this object as its `searchController`.",
+                    "If you provide `contentProvider` that fetches another data type, you should use `searchCellIdentifier` for your table view (if entity attributes differ).",
+                    "`filterFormat` has standard `NSPredicate` syntax and a scope of the `contentProvider` fetched result entity (`Post`)."
+                ],
+                "type": "SearchActionController",
+                "attrs": {
+                    "filterFormat": "text CONTAINS[cd] $input"
+                },
+                "outlets": {
+                    "sender": "searchBar"
+                }
+            },
+            "deleteActionController": {
+                "***": [
+                    "The ownership of CoreData objects resolved via `ownerRelationship` and `isOwnerEntity` attributes in the User Info section of the CoreData Model Inspector.",
+                    "If you set these attributes, delete button will be hidden for objects that wasn't created by your account.",
+                    "Deletion functionality is only applicable for `TableContentController` when allowDeletion = true (default). But you can check it manualy via `isMine` property of any CoreData object."
+                ],
+                "type": "ActionController",
+                "attrs": {
+                    "actionName": "deleteTweet"
+                }
+            },
+            "deleteActionStatusController": {
+                "***": [
+                    "Every `ActionController` has it's own `ActionStatusController`, but it is only responsible for state changes.",
+                    "If you want an error message shown to the user, you shoud create additional `ActionStatusController` with custom error message.",
+                    "This error message will be dispatched to this view controller in its `handleError(_:sender:)` method, which will show alert by default."
+                ],
+                "type": "ActionStatusController",
+                "attrs": {
+                    "actionName": "deleteTweet",
+                    "errorMessage": "Failed to delete tweet."
+                }
+            }
+        },
+        "elements": {
+            "***": [
+                "Each element in this section will be matched based on `wx.identifier` key path defined in the Runtime Attributes section of the Identity Inspector in IB.",
+                "Each `wx.identifier` must be unique only across this view controller, including those which reside in a repeatable content (such as UITableViewCell).",
+                "Attribute `from` means a key path the value will be taken from (in the scope of the current view controller).",
+                "Attribute `to` means a key path the value will be written to (in the scope of the current element). Defaults to `wx_value` which is overridden in the each UIKit element.",
+                "You can access objects and ui elements using their identifiers (`wx.identifier`) or aliases.",
+                "`@self` is a special element that refers this view controller. If you need to bind some properties to your view controller, this is the way to go.",
+                "Do not use `@self` symbol anywhere, except this section for bindings."
+            ],
+            "@self": {
+                "***": [
+                    "`serviceProviderClassName` is a default class name for all network actions initiated from this view controller.",
+                    "You can override this parameter in each `ActionController`."
+                ],
+                "attrs": {
+                    "serviceProviderClassName": "TwitterService"
+                }
+            },
+            "signInButton": {
+                "bindings": [
+                    {
+                        "***": [
+                            "In case of positive predicate result attribute `to` assigned with value of `ifTrue`.",
+                            "`format` is applied to the result independently from the predicate evaluation, just before setting wx_value.",
+                            "`format` supports substitution via $ notation as well as %@. First $ substitutions will be resolved.",
+                            "You can use both notations in one string, but keep in mind that only one %@ can exist and it will be replaced with the string representation of the evaluated predicate value.",
+                            "Unlike `format`, `ifTrue` and `ifFalse` support only $ notation substitution.",
+                            "All in all, button`s `wx_value` (which is title) evaluated to `Logout jack...` if current user`s nickname is `jack`."
+                        ],
+                        "predicateFormat": "content == nil",
+                        "ifTrue": "Sign in",
+                        "ifFalse": "Logout $content.nickname",
+                        "format": "%@..."
+                    },
+                    {
+                        "***": [
+                            "`currentUserStatusController` accessed here via its alias `currentUser`."
+                        ],
+                        "from": "currentUser.inProgress",
+                        "to": "wx_disabled"
+                    }
+                ]
+            },
+            "titleLabel": {
+                "bindings": [
+                    {
+                        "predicateFormat": "content == nil",
+                        "ifTrue": "",
+                        "ifFalse": "$content.name"
+                    }
+                ]
+            },
+            "birdImageView": {
+                "bindings": [
+                    {
+                        "to": "wx_imageName",
+                        "predicateFormat": "content == nil",
+                        "ifTrue": "bird",
+                        "ifFalse": null
+                    }
+                ]
+            },
+            "newsButton": {
+                "bindings": [
+                    {
+                        "from": "newsCounter.value",
+                        "format": "News! (%@)"
+                    },
+                    {
+                        "from": "newsCounter.isEmpty",
+                        "to": "hidden"
+                    }
+                ]
+            },
+            "tweetsTableView": {
+                "bindings": [
+                    {
+                        "to": "refreshControl.wx_value",
+                        "from": "homeTweets.inProgress"
+                    }
+                ]
+            },
+            "footerActivityIndicator": {
+                "bindings": [
+                    {
+                        "from": "moreTweets.inProgress"
+                    }
+                ]
+            },
+            "avatarView": {
+                "bindings": [
+                    {
+                        "to": "wx_autoValue",
+                        "placeholder": "bird",
+                        "from": "content.author",
+                        "predicateFormat": "imageName != nil",
+                        "ifTrue": "$imageName",
+                        "ifFalse": "https://twitter.com/$nickname/profile_image?size=bigger"
+                    }
+                ]
+            },
+            "tweetLabel": {
+                "bindings": [
+                    {
+                        "placeholder": "<Empty tweet>",
+                        "from": "content.text"
+                    }
+                ]
+            },
+            "authorLabel": {
+                "bindings": [
+                    {
+                        "placeholder": "<Author>",
+                        "from": "content.author.name"
+                    }
+                ]
+            },
+            "timeLabel": {
+                "bindings": [
+                    {
+                        "placeholder": "--s",
+                        "from": "content.timeAgoString"
+                    }
+                ]
+            }
+        }
+    }
+}
